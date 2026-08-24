@@ -1,10 +1,11 @@
 /* =====================================================================
    SOLITAIRE — Shared Auth Guard for Legal / Technical / Credit pages
    -----------------------------------------------------------------------
-   Requires the SAME Supabase Auth login used by the main Associate App
-   (index.html). No separate account needed — Legal/Technical/Credit
-   associates sign in once on index.html and that session is reused here
-   automatically (same origin: sachink24.github.io).
+   Signs in against the SAME Supabase Auth users, roles and sessions as the
+   main Associate App — no separate password, no separate users table.
+   SOLITAIRE now has its own dedicated login screen (login.html); this guard
+   sends unauthenticated visitors there and reuses whatever session already
+   exists (same origin: sachink24.github.io).
 
    Usage: load AFTER supabase-config.js, and tag the <script> with the
    page's role so the guard knows which associate type owns this page:
@@ -28,7 +29,7 @@
   document.write('<style id="sfm-auth-style">body{visibility:hidden}</style>');
 
   var PAGE_ROLE = (document.currentScript && document.currentScript.dataset.pageRole) || '';
-  var LOGIN_URL = 'https://sachink24.github.io/associate-app/index.html';
+  var LOGIN_URL = 'login.html';
 
   function overlay(msg) {
     var d = document.createElement('div');
@@ -103,10 +104,11 @@
 
     var rowsRes = await sb.from('users').select('*').eq('auth_user_id', session.user.id).limit(1);
     var row = rowsRes && rowsRes.data && rowsRes.data[0];
-    if (!row || row.status !== 'active') {
-      ov.textContent = 'Account not active. Contact admin. Redirecting…';
+    var AUTHORIZED_ROLES = ['admin', 'owner', 'legal', 'technical', 'credit'];
+    if (!row || row.status !== 'active' || AUTHORIZED_ROLES.indexOf(row.role) === -1) {
+      ov.textContent = 'Your account is not authorized to access the SOLITAIRE Underwriting Portal.';
       await sb.auth.signOut();
-      setTimeout(function () { window.location.href = LOGIN_URL; }, 1500);
+      setTimeout(function () { window.location.href = LOGIN_URL; }, 1800);
       return;
     }
 
