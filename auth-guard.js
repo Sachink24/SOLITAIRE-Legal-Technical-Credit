@@ -65,9 +65,12 @@
   function applyRole(row) {
     var sel = document.getElementById('roleSelect');
     if (!sel) return;
+    // The live DB uses 'tech' as the Technical associate's role value —
+    // treat it as equivalent to a page tagged data-page-role="technical".
+    var effectiveRole = (row.role === 'tech') ? 'technical' : row.role;
     if (row.role === 'owner') {
       // Owner/admin keeps full ability to switch views.
-    } else if (row.role === PAGE_ROLE) {
+    } else if (effectiveRole === PAGE_ROLE) {
       sel.value = 'valuer';
       sel.disabled = true;
     } else {
@@ -104,7 +107,7 @@
 
     var rowsRes = await sb.from('users').select('*').eq('auth_user_id', session.user.id).limit(1);
     var row = rowsRes && rowsRes.data && rowsRes.data[0];
-    var AUTHORIZED_ROLES = ['admin', 'owner', 'legal', 'technical', 'credit'];
+    var AUTHORIZED_ROLES = ['admin', 'owner', 'legal', 'technical', 'tech', 'credit'];
     if (!row || row.status !== 'active' || AUTHORIZED_ROLES.indexOf(row.role) === -1) {
       ov.textContent = 'Your account is not authorized to access the SOLITAIRE Underwriting Portal.';
       await sb.auth.signOut();
