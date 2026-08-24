@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SOLITAIRE Auth Test</title>
+<style>body{font-family:Arial;background:#0A0D12;color:#eee;padding:30px}pre{background:#12161D;padding:20px;border-radius:10px;white-space:pre-wrap}button{padding:12px 18px}</style></head>
+<body>
+<h2>SOLITAIRE Authentication Test</h2>
+<p>Open this page only after signing in.</p>
+<button id="test">Check Session</button>
+<pre id="out">Waiting…</pre>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script>
+document.getElementById('test').onclick=async()=>{
+ const out=document.getElementById('out'), sb=window.SolitaireDB.sb;
+ const {data:{session}}=await sb.auth.getSession();
+ const {data:{user}}=await sb.auth.getUser();
+ const result={
+   session_exists:!!session,
+   auth_uid:user?.id||null,
+   email:user?.email||null
+ };
+ out.textContent=JSON.stringify(result,null,2);
+};
+</script>
+</body></html>
