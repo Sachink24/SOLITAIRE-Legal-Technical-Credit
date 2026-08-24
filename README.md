@@ -1,110 +1,28 @@
-# ⚖️ SOLITAIRE — Legal, Technical & Credit Evaluation Suite
+SOLITAIRE Auth Fix
+===================
 
-<div align="center">
+Files:
+- login.html              Replace the current login.html
+- supabase-config.js      Replace the current supabase-config.js
+- auth-guard.js           Replace the current auth-guard.js
+- auth-test.html          Temporary diagnostic page
 
-**A three-report underwriting tool for Legal Scrutiny, Technical Valuation & Credit Sanction, built for DSA loan workflows.**
+All files use the same Supabase project as the current repository.
 
-*Solitaire Finz Mart · Bhiwandi, Maharashtra*
+Deployment:
+1. Backup your existing files.
+2. Replace the three main files above.
+3. Commit/push to GitHub.
+4. Open login.html and sign in using an existing Associate App Auth user.
+5. Optional: open auth-test.html after login. It should show:
+   session_exists: true
+   auth_uid: <UUID>
+6. Remove auth-test.html after testing.
 
-[![Live Site](https://img.shields.io/badge/Live-GitHub%20Pages-C4A672?style=for-the-badge&logo=github&logoColor=white)](https://sachink24.github.io/SOLITAIRE-Legal---Technical/index.html)
-![Status](https://img.shields.io/badge/Status-Active-5FA97A?style=for-the-badge)
-![Backend](https://img.shields.io/badge/Backend-Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
+Important:
+These files fix the SOLITAIRE browser authentication/session flow.
+They do NOT grant database permissions. Keep RLS enabled.
 
-</div>
-
----
-
-## ✨ Overview
-
-**SOLITAIRE** is a mobile-first, single-page web application used by Solitaire Finz Mart to generate **bank-ready Legal, Technical, and Credit / Sanction Reports** for loan proposals — the three reports every bank/NBFC credit file needs before sanctioning a Home Loan, LAP, Business Loan, or Construction Finance case.
-
-Instead of juggling Word templates and manual checklists, an Advocate, Technical Associate, or Credit Officer fills a structured, section-by-section form directly on their phone or laptop, sees a live completion meter, and exports a clean, print-ready PDF — all synced in real time to a shared Supabase backend so Owners and Agents can track progress without chasing WhatsApp updates.
-
-The Credit report is where the loan terms actually get fixed — **Sanctioned Loan Amount, Tenure, Rate of Interest, Fees, and Conditions/Sanction Conditions** are set manually by the Credit Officer and then flow straight into the final bank sanction letter and customer WhatsApp updates.
-
----
-
-## 🗂️ Pages
-
-| Page | Purpose |
-|---|---|
-| `index.html` | Landing entry point (mirrors the Legal Evaluation Report) |
-| `legal.html` | **Legal Evaluation Report** — title investigation, document verification, litigation search, statutory compliance |
-| `technical.html` | **Technical Evaluation Report** — site visit, valuation, construction compliance |
-| `credit.html` | **Credit / Sanction Report** — income & obligation assessment, document verification, sanction terms, risk & recommendation |
-| `privacy.html` | Privacy Policy & Terms of Service |
-| `supabase-config.js` | Shared Supabase client + lead-lookup helpers (`window.SolitaireDB`), loaded by all four report pages |
-
----
-
-## 🧭 Core Features
-
-- **📋 Section-by-section report builder** — each report is broken into focused sections (Header, Document Verification, Risk Assessment, Sign-off, and more) so nothing gets missed on a live case.
-- **🎭 Role-based views** — switch between **Advocate / Technical Associate / Credit Associate**, **DSA Admin**, and **Agent (view-only)** to control what's editable vs. read-only.
-- **✅ 9-point document verification checklists** — Legal, Technical, and Credit each carry their own domain-specific checklist (title documents, site/valuation documents, income & credit documents) with a per-item verified/issue-found toggle.
-- **💰 Manual sanction terms (Credit)** — Loan Amount, Term, ROI, Fees, and Conditions/Sanction Conditions are fixed by hand in the Credit report, separate from the customer's originally requested amount.
-- **🔗 Cross-linked reports** — the Legal, Technical, and Credit reports pull a shared lead record (via `📥 Pull Lead`) so all three sides of a credit file stay consistent.
-- **🚦 Risk & recommendation chips** — quick visual Low / Medium / High risk levels feed straight into each report's final recommendation (Clear/Sanction vs. Conditional vs. Reject).
-- **📈 Live progress meter** — a real-time "% complete" tracker shows exactly how far a draft report is from submission-ready.
-- **☁️ Supabase-backed autosave** — every field syncs to a shared cloud database, so a report started on one device is instantly visible to the rest of the team.
-- **🖨️ One-click PDF export** — "Export Bank-Ready PDF" opens a print-formatted view ready to save or send to the lender.
-- **🌗 Dark / light theme toggle** — a black-and-gold "Solitaire" aesthetic in dark mode, with a warm ivory-and-gold light mode.
-- **📱 Mobile-first design** — built to be filled out on-site, on a phone, during a property visit or borrower meeting.
-
----
-
-## 🎨 Design Language
-
-A consistent black-and-gold identity runs across every page:
-
-- **Typography:** Cormorant Garamond (serif headings) + Inter (body) + IBM Plex Mono (data/codes)
-- **Palette:** Deep navy-black backgrounds (`#0A0D12`) with warm gold accents (`#C4A672`) and status colors for OK / Warning / Risk states
-- **Components:** Rounded panels, soft gold borders, sticky top navigation, and a signature/seal block for sign-off
-
----
-
-## 🏦 Built For
-
-Loan products underwritten through Solitaire Finz Mart's partner banks & NBFCs, including:
-
-`Home Loan` · `LAP` · `Business Loan` · `Balance Transfer` · `Construction Loan` · `Project Finance` · `Commercial Property` · `OD / CC`
-
-Across partners such as **ICICI, Axis, SBI, PNB, HDFC, Piramal, Godrej, Shriram, Tata Capital, IIFL**.
-
----
-
-## 🛠️ Tech Stack
-
-- **Frontend:** Vanilla HTML/CSS/JS (single-file pages, no build step)
-- **Backend:** [Supabase](https://supabase.com) (Postgres + realtime sync) — reports are stored in `evaluation_reports` (keyed by `report_type` + `loan_app_no`), pulled from the shared `leads` table
-- **Fonts:** Google Fonts (Cormorant Garamond, Inter, IBM Plex Mono)
-- **Hosting:** GitHub Pages
-
----
-
-## 🚀 Getting Started
-
-This is a static, no-build site — just open a page or serve the folder:
-
-```bash
-git clone https://github.com/sachink24/SOLITAIRE-Legal---Technical.git
-cd SOLITAIRE-Legal---Technical
-# open index.html directly, or serve locally:
-python3 -m http.server 8000
-```
-
-Then visit `http://localhost:8000`.
-
----
-
-## 🔒 Privacy & Compliance
-
-Application data is stored on Supabase over encrypted (HTTPS/TLS) connections with role-based access control. See [`privacy.html`](./privacy.html) for the full policy — Solitaire Finz Mart acts strictly as a DSA/advisory intermediary; final loan approval and terms rest with the partner bank/NBFC.
-
----
-
-<div align="center">
-
-**© 2026 Solitaire Finz Mart** · Loan DSA & Financial Advisory · Bhiwandi, Thane District, Maharashtra
-
-</div>
+If the 42501 error is still coming from associate-app while an admin creates
+business_associates/legal_team/technical_team/credit_team records, the insert
+code in associate-app must also use the authenticated Supabase client/session.
