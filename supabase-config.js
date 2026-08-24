@@ -18,9 +18,22 @@
 (function () {
     const SUPABASE_URL = "https://nbpvamrwzqrgoiwpadwc.supabase.co";
     const SUPABASE_KEY = "sb_publishable_GrJ_9z_y903WFMGjoAg82Q_cG3N2_Jx";
+    const REMEMBER_KEY = 'sfm_remember_device';
+
+    // "Remember this device" (set on login.html) decides whether the auth
+    // session survives a browser restart (localStorage) or lasts only the
+    // current tab session (sessionStorage). Defaults to remembered.
+    function authStorage() {
+        try {
+            const v = window.localStorage.getItem(REMEMBER_KEY);
+            return (v === '0') ? window.sessionStorage : window.localStorage;
+        } catch (e) { return window.localStorage; }
+    }
 
     const sb = (window.supabase && window.supabase.createClient)
-        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { storage: authStorage(), persistSession: true, autoRefreshToken: true }
+        })
         : null;
 
     const MEDIA_BUCKET = 'evaluation-media';
@@ -168,11 +181,89 @@
         return data ? data.signedUrl : null;
     }
 
+    /* -------------------------------------------------------------
+       WORKFLOW — submit / approve / reject / rework lifecycle
+       Used by legal.html, technical.html, credit.html, admin.html.
+       ------------------------------------------------------------- */
+
+    // Lightweight status-only update (no full jsonb re-upload) — used for
+    // approve/reject/rework/submit metadata columns on evaluation_reports.
+    async function patchReportStatus(reportType, appNo, patch) {
+        if (!sb || !appNo) return { error: { message: 'Supabase client not available or missing app no' } };
+        const { error } = await sb.from('evaluation_reports')
+            .update(patch)
+            .eq('report_type', reportType).eq('loan_app_no', appNo);
+        if (error) console.error('SolitaireDB.patchReportStatus error:', error);
+        return { error };
+    }
+
+    // Append-only audit trail row (public.workflow_history). Resolves the
+    // acting user's display name/role from public.users via the live session
+    // so callers don't have to pass it in.
+    async function logWorkflowEvent({ leadId, applicationNo, action, oldStatus, newStatus, remarks }) {
+        if (!sb) return { error: { message: 'Supabase client not available' } };
+        let userName = null, role = null;
+        try {
+            const { data: sessData } = await sb.auth.getSession();
+            const uid = sessData && sessData.session && sessData.session.user && sessData.session.user.id;
+            if (uid) {
+                const { data: prof } = await sb.from('users').select('name,email,role').eq('auth_user_id', uid).maybeSingle();
+                if (prof) { userName = prof.name || prof.email; role = prof.role; }
+            }
+        } catch (e) { /* best-effort — history row still gets written without identity */ }
+
+        const { error } = await sb.from('workflow_history').insert({
+            lead_id: leadId || null,
+            application_no: applicationNo || null,
+            action,
+            old_status: oldStatus || null,
+            new_status: newStatus || null,
+            user_name: userName,
+            role,
+            remarks: remarks || null
+        });
+        if (error) console.error('SolitaireDB.logWorkflowEvent error:', error);
+        return { error };
+    }
+
+    // Mirrors a section's status onto the `leads` row so the Admin Dashboard
+    // and the main Associate App can read progress without joining
+    // evaluation_reports. reportType is 'legal' | 'technical' | 'credit'.
+    async function syncLeadStatus(leadId, reportType, status, extra) {
+        if (!sb || !leadId) return { error: { message: 'Missing client or leadId' } };
+        const patch = Object.assign({}, extra || {});
+        patch[reportType + '_status'] = status;
+        if (status === 'submitted') {
+            patch[reportType + '_submitted'] = true;
+            patch[reportType + '_submitted_date'] = new Date().toISOString();
+        }
+        const { error } = await sb.from('leads').update(patch).eq('id', leadId);
+        if (error) console.error('SolitaireDB.syncLeadStatus error:', error);
+        return { error };
+    }
+
+    // Full case bundle for the Admin case-detail view: the lead row plus its
+    // legal/technical/credit reports and its audit trail, in one call.
+    async function getCaseBundle(leadId) {
+        if (!sb || !leadId) return null;
+        const [{ data: lead }, { data: reports }, { data: history }, { data: sanction }] = await Promise.all([
+            sb.from('leads').select('*').eq('id', leadId).maybeSingle(),
+            sb.from('evaluation_reports').select('*').eq('lead_id', leadId),
+            sb.from('workflow_history').select('*').eq('lead_id', leadId).order('created_at', { ascending: false }),
+            sb.from('sanctions').select('*').eq('lead_id', leadId).maybeSingle()
+        ]);
+        const byType = { legal: null, technical: null, credit: null };
+        (reports || []).forEach(r => { byType[r.report_type] = r; });
+        return { lead: lead || null, reports: byType, history: history || [], sanction: sanction || null };
+    }
+
     window.SolitaireDB = {
         sb, SUPABASE_URL, SUPABASE_KEY, MEDIA_BUCKET,
         // leads
         searchLeads, getLeadById, loanAppNoForLead, leadLabel, mapLeadToReportData,
         // evaluation_reports
-        loadReportFromCloud, saveReportToCloud, uploadDataUrlToStorage, signedUrlFor
+        loadReportFromCloud, saveReportToCloud, uploadDataUrlToStorage, signedUrlFor,
+        // workflow
+        patchReportStatus, logWorkflowEvent, syncLeadStatus, getCaseBundle
     };
 })();
