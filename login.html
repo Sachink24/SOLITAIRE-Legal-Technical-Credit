@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Sign In — SOLITAIRE Underwriting Workspace</title>
+<meta name="description" content="Sign in to the SOLITAIRE Legal, Technical &amp; Credit underwriting workspace — Solitaire Finz Mart." />
+<meta name="robots" content="noindex" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    --bg: #0A0D12;
+    --panel: #12161D;
+    --panel-2: #171C25;
+    --border: rgba(196, 166, 114, 0.22);
+    --border-soft: rgba(196, 166, 114, 0.12);
+    --gold: #C4A672;
+    --gold-bright: #E1C892;
+    --ink: #ECE8E0;
+    --ink-dim: #9BA3AE;
+    --ink-faint: #6B7280;
+    --navy: #141A26;
+    --ok: #5FA97A;
+    --ok-bg: rgba(95, 169, 122, 0.12);
+    --warn: #CF9A45;
+    --warn-bg: rgba(207, 154, 69, 0.12);
+    --bad: #C1594E;
+    --bad-bg: rgba(193, 89, 78, 0.12);
+    --radius: 10px;
+    --shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    position: relative;
+    overflow-x: hidden;
+  }
+  .serif { font-family: 'Cormorant Garamond', serif; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  a { color: inherit; }
+
+  /* ambient background seal, faint */
+  body::before {
+    content: '';
+    position: fixed; inset: -10%;
+    background:
+      radial-gradient(600px 600px at 15% 10%, rgba(196,166,114,0.06), transparent 60%),
+      radial-gradient(500px 500px at 90% 90%, rgba(196,166,114,0.05), transparent 60%);
+    pointer-events: none;
+  }
+
+  .wrap { width: 100%; max-width: 400px; position: relative; z-index: 1; }
+
+  .brand { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 30px; text-align: center; }
+  .brand-mark { width: 44px; height: 44px; }
+  .brand-text .name { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 26px; letter-spacing: .04em; }
+  .brand-text .tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--gold); margin-top: 4px; }
+  .brand-text .sub { font-size: 12.5px; color: var(--ink-dim); margin-top: 10px; font-style: italic; font-family: 'Cormorant Garamond', serif; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 28px 26px;
+    box-shadow: var(--shadow);
+  }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 7px; font-weight: 600;
+  }
+  .input-row { position: relative; }
+  .field input {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--border-soft);
+    color: var(--ink); font-family: 'Inter', sans-serif; font-size: 14.5px;
+    padding: 12px 14px; border-radius: 9px; outline: none;
+    transition: border-color .15s ease;
+  }
+  .field input:focus { border-color: var(--gold); }
+  .field input[type="password"], .field input.pw { padding-right: 44px; }
+
+  .pw-toggle {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    width: 32px; height: 32px; border-radius: 7px; border: none; background: transparent;
+    color: var(--ink-faint); cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .pw-toggle:hover { color: var(--gold-bright); }
+  .pw-toggle svg { width: 17px; height: 17px; }
+
+  .row-between { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; font-size: 12.5px; }
+  .remember { display: flex; align-items: center; gap: 7px; color: var(--ink-dim); cursor: pointer; user-select: none; }
+  .remember input { accent-color: var(--gold); width: 14px; height: 14px; cursor: pointer; }
+  .forgot-link { color: var(--gold); background: none; border: none; cursor: pointer; font-size: 12.5px; font-family: inherit; padding: 0; }
+  .forgot-link:hover { color: var(--gold-bright); text-decoration: underline; }
+
+  .btn-signin {
+    width: 100%; padding: 13px; border-radius: 9px; border: none;
+    background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+    color: #14100A; font-weight: 700; font-size: 14.5px; letter-spacing: .01em;
+    cursor: pointer; transition: filter .15s ease;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-signin:hover { filter: brightness(1.06); }
+  .btn-signin:disabled { opacity: .55; cursor: default; filter: none; }
+
+  .spinner {
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 2px solid rgba(20,16,10,.35); border-top-color: #14100A;
+    animation: spin .7s linear infinite; display: none;
+  }
+  .btn-signin.loading .spinner { display: inline-block; }
+  .btn-signin.loading .btn-label { opacity: .8; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .msg {
+    font-size: 12.5px; padding: 10px 12px; border-radius: 8px; margin-bottom: 16px;
+    display: none; line-height: 1.5;
+  }
+  .msg.show { display: block; }
+  .msg.err { background: var(--bad-bg); color: var(--bad); border: 1px solid rgba(193,89,78,.35); }
+  .msg.ok { background: var(--ok-bg); color: var(--ok); border: 1px solid rgba(95,169,122,.35); }
+  .msg.info { background: var(--warn-bg); color: var(--warn); border: 1px solid rgba(207,154,69,.35); }
+
+  .footer-note {
+    text-align: center; margin-top: 22px; font-size: 11.5px; color: var(--ink-faint);
+    font-family: 'IBM Plex Mono', monospace; letter-spacing: .04em;
+  }
+  .footer-links { text-align: center; margin-top: 14px; font-size: 12px; }
+  .footer-links a { color: var(--ink-dim); text-decoration: none; }
+  .footer-links a:hover { color: var(--gold-bright); }
+
+  /* Forgot-password inline panel */
+  .fp-panel { display: none; }
+  .fp-panel.show { display: block; }
+  .fp-back { background: none; border: none; color: var(--ink-faint); font-size: 12.5px; cursor: pointer; margin-bottom: 16px; display: flex; align-items: center; gap: 5px; padding: 0; font-family: inherit; }
+  .fp-back:hover { color: var(--gold-bright); }
+  .fp-back svg { width: 14px; height: 14px; }
+  .form-panel.hide { display: none; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 32 32" fill="none">
+      <path d="M16 2 L28 9 V23 L16 30 L4 23 V9 Z" stroke="#C4A672" stroke-width="1.4"/>
+      <path d="M16 8 L22 11.5 V18.5 L16 22 L10 18.5 V11.5 Z" stroke="#C4A672" stroke-width="1.1" fill="none"/>
+    </svg>
+    <div class="brand-text">
+      <div class="name">SOLITAIRE</div>
+      <div class="tag">Legal · Technical · Credit</div>
+      <div class="sub">"Underwriting Workspace"</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="msg" class="msg"></div>
+
+    <!-- ===== Sign-in form ===== -->
+    <div id="formPanel" class="form-panel">
+      <form id="loginForm" autocomplete="on">
+        <div class="field">
+          <label for="email">User ID / Email</label>
+          <input type="email" id="email" name="email" placeholder="you@solitairefinzmart.com" autocomplete="username" required />
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <div class="input-row">
+            <input type="password" id="password" name="password" class="pw" placeholder="••••••••" autocomplete="current-password" required />
+            <button type="button" class="pw-toggle" id="pwToggle" aria-label="Show password" tabindex="-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" id="eyeIcon"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="row-between">
+          <label class="remember"><input type="checkbox" id="remember" checked /> Remember this device</label>
+          <button type="button" class="forgot-link" id="forgotLink">Forgot Password?</button>
+        </div>
+        <button type="submit" class="btn-signin" id="signInBtn">
+          <span class="spinner"></span><span class="btn-label">Sign In</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- ===== Forgot password panel ===== -->
+    <div id="fpPanel" class="fp-panel">
+      <button type="button" class="fp-back" id="fpBack">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Back to sign in
+      </button>
+      <form id="fpForm">
+        <div class="field">
+          <label for="fpEmail">Account Email</label>
+          <input type="email" id="fpEmail" placeholder="you@solitairefinzmart.com" required />
+        </div>
+        <button type="submit" class="btn-signin" id="fpBtn">
+          <span class="spinner"></span><span class="btn-label">Send Reset Link</span>
+        </button>
+      </form>
+    </div>
+
+  </div>
+
+  <div class="footer-note">AUTHORIZED USERS ONLY</div>
+  <div class="footer-links"><a href="index.html">← Back to SOLITAIRE overview</a></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  const SUPABASE_URL = "https://nbpvamrwzqrgoiwpadwc.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_GrJ_9z_y903WFMGjoAg82Q_cG3N2_Jx";
+  const REMEMBER_KEY = 'sfm_remember_device';
+
+  // Role -> destination page. Kept in sync with each page's data-page-role.
+  const ROLE_ROUTES = {
+    admin: 'admin.html',
+    owner: 'admin.html',
+    legal: 'legal.html',
+    technical: 'technical.html',
+    credit: 'credit.html'
+  };
+
+  const els = {
+    form: document.getElementById('loginForm'),
+    email: document.getElementById('email'),
+    password: document.getElementById('password'),
+    pwToggle: document.getElementById('pwToggle'),
+    eyeIcon: document.getElementById('eyeIcon'),
+    remember: document.getElementById('remember'),
+    signInBtn: document.getElementById('signInBtn'),
+    msg: document.getElementById('msg'),
+    forgotLink: document.getElementById('forgotLink'),
+    formPanel: document.getElementById('formPanel'),
+    fpPanel: document.getElementById('fpPanel'),
+    fpBack: document.getElementById('fpBack'),
+    fpForm: document.getElementById('fpForm'),
+    fpEmail: document.getElementById('fpEmail'),
+    fpBtn: document.getElementById('fpBtn')
+  };
+
+  function showMsg(text, type) {
+    els.msg.textContent = text;
+    els.msg.className = 'msg show ' + (type || 'info');
+  }
+  function clearMsg() { els.msg.className = 'msg'; }
+  function setLoading(btn, on) { btn.classList.toggle('loading', !!on); btn.disabled = !!on; }
+
+  els.pwToggle.addEventListener('click', function () {
+    const isPw = els.password.type === 'password';
+    els.password.type = isPw ? 'text' : 'password';
+    els.eyeIcon.innerHTML = isPw
+      ? '<path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.6 21.6 0 0 1 5.06-6.06M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.6 21.6 0 0 1-2.16 3.19M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/>'
+      : '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/>';
+  });
+
+  els.forgotLink.addEventListener('click', function () {
+    clearMsg();
+    els.formPanel.classList.add('hide');
+    els.fpPanel.classList.add('show');
+    els.fpEmail.value = els.email.value || '';
+  });
+  els.fpBack.addEventListener('click', function () {
+    clearMsg();
+    els.fpPanel.classList.remove('show');
+    els.formPanel.classList.remove('hide');
+  });
+
+  // Redirect straight through if a valid session + authorized role already exist
+  // (e.g. user hits login.html again while still signed in).
+  async function redirectIfAlreadySignedIn(client) {
+    const { data } = await client.auth.getSession();
+    const session = data && data.session;
+    if (!session || !session.user) return false;
+    const { data: profile } = await client.from('users').select('*').eq('auth_user_id', session.user.id).maybeSingle();
+    if (profile && profile.status === 'active' && ROLE_ROUTES[profile.role]) {
+      window.location.href = ROLE_ROUTES[profile.role];
+      return true;
+    }
+    return false;
+  }
+
+  // A bootstrap client only used to check for an existing session on load,
+  // reading whichever storage the device preference currently points to.
+  function storageFor(remember) {
+    try { return remember ? window.localStorage : window.sessionStorage; }
+    catch (e) { return window.localStorage; }
+  }
+
+  (async function init() {
+    let remember = true;
+    try { remember = window.localStorage.getItem(REMEMBER_KEY) !== '0'; } catch (e) {}
+    els.remember.checked = remember;
+    const bootClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { storage: storageFor(remember), persistSession: true, autoRefreshToken: true }
+    });
+    await redirectIfAlreadySignedIn(bootClient);
+  })();
+
+  els.form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    clearMsg();
+    const email = els.email.value.trim();
+    const password = els.password.value;
+    const remember = els.remember.checked;
+    if (!email || !password) return;
+
+    setLoading(els.signInBtn, true);
+    try {
+      // Persist the device preference BEFORE creating the client that will
+      // hold this session, so every later page (via supabase-config.js)
+      // reads the session from the same storage backend.
+      try { window.localStorage.setItem(REMEMBER_KEY, remember ? '1' : '0'); } catch (e) {}
+
+      const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { storage: storageFor(remember), persistSession: true, autoRefreshToken: true }
+      });
+
+      const { data: authData, error: authError } = await client.auth.signInWithPassword({ email, password });
+      if (authError || !authData.user) {
+        showMsg('Invalid User ID or password.', 'err');
+        setLoading(els.signInBtn, false);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await client.from('users')
+        .select('*').eq('auth_user_id', authData.user.id).maybeSingle();
+
+      if (profileError || !profile || profile.status !== 'active') {
+        showMsg('Your account is not authorized to access the SOLITAIRE Underwriting Portal.', 'err');
+        await client.auth.signOut();
+        setLoading(els.signInBtn, false);
+        return;
+      }
+
+      const dest = ROLE_ROUTES[profile.role];
+      if (!dest) {
+        showMsg('Your account is not authorized to access the SOLITAIRE Underwriting Portal.', 'err');
+        await client.auth.signOut();
+        setLoading(els.signInBtn, false);
+        return;
+      }
+
+      showMsg('Signed in — redirecting…', 'ok');
+      window.location.href = dest;
+    } catch (err) {
+      console.error('Sign-in error:', err);
+      showMsg('Unable to sign in right now. Please try again.', 'err');
+      setLoading(els.signInBtn, false);
+    }
+  });
+
+  els.fpForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const email = els.fpEmail.value.trim();
+    if (!email) return;
+    setLoading(els.fpBtn, true);
+    try {
+      const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname.replace(/login\.html$/, '') + 'login.html'
+      });
+      if (error) {
+        showMsg('Unable to send reset link. Please contact your Admin.', 'err');
+      } else {
+        showMsg('If that account exists, a password reset link has been sent.', 'ok');
+      }
+    } catch (err) {
+      showMsg('Unable to send reset link. Please contact your Admin.', 'err');
+    } finally {
+      setLoading(els.fpBtn, false);
+    }
+  });
+})();
+</script>
+</body>
+</html>
