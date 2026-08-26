@@ -286,8 +286,9 @@
     const session = data && data.session;
     if (!session || !session.user) return false;
     const { data: profile } = await client.from('users').select('*').eq('auth_user_id', session.user.id).maybeSingle();
-    if (profile && profile.status === 'active' && ROLE_ROUTES[profile.role]) {
-      window.location.href = ROLE_ROUTES[profile.role];
+    const normalizedRole = profile && (profile.role || '').toLowerCase();
+    if (profile && profile.status === 'active' && ROLE_ROUTES[normalizedRole]) {
+      window.location.href = ROLE_ROUTES[normalizedRole];
       return true;
     }
     return false;
@@ -346,7 +347,8 @@
         return;
       }
 
-      const dest = ROLE_ROUTES[profile.role];
+      const normalizedRole = (profile.role || '').toLowerCase();
+      const dest = ROLE_ROUTES[normalizedRole];
       if (!dest) {
         showMsg('Your account is not authorized to access the SOLITAIRE Underwriting Portal.', 'err');
         await client.auth.signOut();
