@@ -262,7 +262,7 @@
 
   async function init() {
     const auth = await waitForAuth();
-    const role = auth && auth.profile && auth.profile.role;
+    const role = (auth && auth.profile && auth.profile.role || '').toLowerCase();
     if (!auth || (role !== 'admin' && role !== 'owner')) {
       document.getElementById('notAuthWrap').style.display = 'block';
       return;
