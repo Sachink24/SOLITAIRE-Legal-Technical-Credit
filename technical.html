@@ -1473,6 +1473,11 @@
             }
         }
 
+        .print-letterhead,
+        .print-footer {
+            display: none;
+        }
+
         @media print {
             .topbar,
             .rail,
@@ -1497,11 +1502,80 @@
                 padding-bottom: 20px;
                 max-width: 100%;
             }
+            .print-letterhead {
+                display: block !important;
+                text-align: center;
+                padding-bottom: 14px;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #C4A672;
+            }
+            .print-letterhead .pl-mark {
+                font-size: 22px;
+                color: #B48C28;
+                margin-bottom: 4px;
+            }
+            .print-letterhead .pl-name {
+                font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+                font-size: 22px;
+                font-weight: 700;
+                letter-spacing: 3px;
+                color: #111;
+            }
+            .print-letterhead .pl-tag {
+                font-size: 9.5px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                color: #8a7648;
+                margin-top: 3px;
+            }
+            .print-letterhead .pl-rule {
+                height: 1px;
+                background: #C4A672;
+                margin: 10px auto;
+                width: 55%;
+            }
+            .print-letterhead .pl-title {
+                font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+                font-size: 15px;
+                font-weight: 700;
+                letter-spacing: 1px;
+                margin-top: 4px;
+                color: #111;
+            }
+            .print-letterhead .pl-meta {
+                display: flex;
+                justify-content: space-between;
+                font-size: 10px;
+                color: #444;
+                margin-top: 10px;
+            }
+            .print-footer {
+                display: block !important;
+                margin-top: 26px;
+                padding-top: 10px;
+                border-top: 1px solid #ccc;
+                font-size: 8.5px;
+                color: #777;
+                text-align: center;
+            }
         }
     </style>
 </head>
 
 <body data-theme="dark">
+
+    <!-- ===== PRINT LETTERHEAD (company branding — shown only on printed / exported PDF) ===== -->
+    <div class="print-letterhead" id="printLetterhead">
+        <div class="pl-mark">&#9670;</div>
+        <div class="pl-name">SOLITAIRE FINZ MART</div>
+        <div class="pl-tag">Loan Origination &amp; Financial Advisory</div>
+        <div class="pl-rule"></div>
+        <div class="pl-title">TECHNICAL EVALUATION REPORT</div>
+        <div class="pl-meta">
+            <span id="plAppNo">Application No: —</span>
+            <span id="plDate">Report Date: —</span>
+        </div>
+    </div>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
@@ -1557,6 +1631,11 @@
     <!-- ===== ACTION BAR ===== -->
     <div class="actionbar">
         <div class="actionbar-inner" id="actionBar"></div>
+    </div>
+
+    <!-- ===== PRINT FOOTER (company branding — shown only on printed / exported PDF) ===== -->
+    <div class="print-footer">
+        Solitaire Finz Mart &middot; Loan DSA &amp; Financial Advisory &middot; Bhiwandi, Thane, Maharashtra &middot; This report is computer generated and forms part of the internal credit file.
     </div>
 
     <script>
@@ -2520,6 +2599,14 @@
             renderRail();
             renderForm();
             renderActionBar();
+            updatePrintLetterhead();
+        }
+
+        function updatePrintLetterhead() {
+            const appEl = document.getElementById('plAppNo');
+            const dateEl = document.getElementById('plDate');
+            if (appEl) appEl.textContent = 'Application No: ' + (state.data.loanAppNo || '—');
+            if (dateEl) dateEl.textContent = 'Report Date: ' + (state.data.reportDate || new Date().toLocaleDateString('en-IN'));
         }
 
         // -------------------------------------------------------------
