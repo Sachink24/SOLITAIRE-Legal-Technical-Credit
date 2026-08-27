@@ -1473,6 +1473,97 @@
             }
         }
 
+        /* ---------- Flow of Title: multi-entry table ---------- */
+        .tc-wrap {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .tc-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .tc-num {
+            flex: 0 0 auto;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--gold);
+            color: #1a1408;
+            font-size: 11.5px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 4px;
+        }
+
+        .tc-fields {
+            flex: 1 1 auto;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .tc-field label {
+            font-size: 10.5px;
+            color: var(--ink-dim);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .tc-remove {
+            flex: 0 0 auto;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--ink-faint);
+            font-size: 16px;
+            margin-top: 2px;
+        }
+
+        .tc-remove:hover {
+            color: #d9534f;
+            background: rgba(217, 83, 79, .12);
+        }
+
+        .tc-empty {
+            font-size: 12.5px;
+            color: var(--ink-faint);
+            padding: 14px;
+            text-align: center;
+            border: 1px dashed var(--border);
+            border-radius: 10px;
+        }
+
+        .tc-add {
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .tc-fields {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ---------- Print letterhead (company branding on exported PDF) ---------- */
+        .print-letterhead,
+        .print-footer {
+            display: none;
+        }
+
         @media print {
             .topbar,
             .rail,
@@ -1497,11 +1588,84 @@
                 padding-bottom: 20px;
                 max-width: 100%;
             }
+            .tc-remove,
+            .tc-add {
+                display: none !important;
+            }
+            .print-letterhead {
+                display: block !important;
+                text-align: center;
+                padding-bottom: 14px;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #C4A672;
+            }
+            .print-letterhead .pl-mark {
+                font-size: 22px;
+                color: #B48C28;
+                margin-bottom: 4px;
+            }
+            .print-letterhead .pl-name {
+                font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+                font-size: 22px;
+                font-weight: 700;
+                letter-spacing: 3px;
+                color: #111;
+            }
+            .print-letterhead .pl-tag {
+                font-size: 9.5px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                color: #8a7648;
+                margin-top: 3px;
+            }
+            .print-letterhead .pl-rule {
+                height: 1px;
+                background: #C4A672;
+                margin: 10px auto;
+                width: 55%;
+            }
+            .print-letterhead .pl-title {
+                font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+                font-size: 15px;
+                font-weight: 700;
+                letter-spacing: 1px;
+                margin-top: 4px;
+                color: #111;
+            }
+            .print-letterhead .pl-meta {
+                display: flex;
+                justify-content: space-between;
+                font-size: 10px;
+                color: #444;
+                margin-top: 10px;
+            }
+            .print-footer {
+                display: block !important;
+                margin-top: 26px;
+                padding-top: 10px;
+                border-top: 1px solid #ccc;
+                font-size: 8.5px;
+                color: #777;
+                text-align: center;
+            }
         }
     </style>
 </head>
 
 <body data-theme="dark">
+
+    <!-- ===== PRINT LETTERHEAD (company branding — shown only on printed / exported PDF) ===== -->
+    <div class="print-letterhead" id="printLetterhead">
+        <div class="pl-mark">&#9670;</div>
+        <div class="pl-name">SOLITAIRE FINZ MART</div>
+        <div class="pl-tag">Loan Origination &amp; Financial Advisory</div>
+        <div class="pl-rule"></div>
+        <div class="pl-title">LEGAL EVALUATION REPORT</div>
+        <div class="pl-meta">
+            <span id="plAppNo">Application No: —</span>
+            <span id="plDate">Report Date: —</span>
+        </div>
+    </div>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
@@ -1557,6 +1721,11 @@
     <!-- ===== ACTION BAR ===== -->
     <div class="actionbar">
         <div class="actionbar-inner" id="actionBar"></div>
+    </div>
+
+    <!-- ===== PRINT FOOTER (company branding — shown only on printed / exported PDF) ===== -->
+    <div class="print-footer">
+        Solitaire Finz Mart &middot; Loan DSA &amp; Financial Advisory &middot; Bhiwandi, Thane, Maharashtra &middot; This report is computer generated and forms part of the internal credit file.
     </div>
 
     <script>
@@ -1719,8 +1888,8 @@
                 { key: 'ownershipType', label: 'Ownership Type', type: 'select', req: true, options: ['Freehold',
                         'Leasehold', 'Government Grant'
                     ] },
-                { key: 'titleFlow', label: 'Flow of Title / Chain of Ownership (narrative)', type: 'textarea',
-                    req: true, full: true },
+                { key: 'titleChainEntries', label: 'Flow of Title / Chain of Ownership — Transfer Entries',
+                    type: 'titlechain', req: true, full: true },
                 { key: 'rootOfTitleYears', label: 'Root of Title Searched (years)', type: 'number' },
                 { key: 'ecPeriod', label: 'Encumbrance Certificate Period Covered', type: 'text' },
                 { key: 'encumbranceFound', label: 'Encumbrance Found in EC', type: 'radio', options: ['Yes', 'No'] },
@@ -1878,7 +2047,7 @@
                 }
                 (sec.fields || []).forEach(f => {
                     if (f.type === 'readonly' || f.type === 'seal') return;
-                    if (f.req) { req++; if (state.data[f.key]) filled++; }
+                    if (f.req) { req++; if (fieldFilled(f)) filled++; }
                 });
             });
             return req ? Math.round((filled / req) * 100) : 0;
@@ -1902,7 +2071,7 @@
 
         function sectionComplete(sec) {
             if (sec.type === 'verify') return sec.items.every((l, i) => state.data['verify_' + i].status !== 'pending');
-            return (sec.fields || []).filter(f => f.req).every(f => state.data[f.key]);
+            return (sec.fields || []).filter(f => f.req).every(f => fieldFilled(f));
         }
 
         const GATE_CHAIN = [
@@ -1948,7 +2117,7 @@
         function getMissingRequired() {
             const missing = [];
             schema.forEach(sec => {
-                (sec.fields || []).forEach(f => { if (f.req && !state.data[f.key]) missing.push(f.key); });
+                (sec.fields || []).forEach(f => { if (f.req && !fieldFilled(f)) missing.push(f.key); });
             });
             return missing;
         }
@@ -2097,14 +2266,80 @@
                 case 'riskchips':
                     inner = riskHTML(ro);
                     break;
+                case 'titlechain':
+                    inner = titleChainHTML(Array.isArray(val) ? val : [], ro);
+                    break;
                 default:
                     inner = '';
             }
-            return `<div class="${cls}${(f.req && !val && submitAttempted) ? ' invalid' : ''}" id="f_${f.key}">
+            return `<div class="${cls}${(f.req && !fieldFilled(f) && submitAttempted) ? ' invalid' : ''}" id="f_${f.key}">
             <label>${f.label}${reqStar}</label>
             ${inner}
             <div class="hint-err">This field is required before submission.</div>
           </div>`;
+        }
+
+        function fieldFilled(f) {
+            const v = state.data[f.key];
+            if (f.type === 'titlechain') {
+                return Array.isArray(v) && v.some(e => e && e.buyer && e.seller && e.docket && e.date);
+            }
+            return !!v;
+        }
+
+        // ---------- Flow of Title (multi-entry) ----------
+        function titleChainHTML(entries, ro) {
+            const rows = (entries || []).map((e, i) => `
+              <div class="tc-row">
+                <div class="tc-num">${i + 1}</div>
+                <div class="tc-fields">
+                  <div class="tc-field"><label>Buyer / Purchaser — Full Name</label>
+                    <input type="text" value="${escapeAttr(e.buyer || '')}" ${ro ? 'disabled' : ''} placeholder="Full name of buyer" oninput="updateTitleChainEntry(${i},'buyer',this.value)"></div>
+                  <div class="tc-field"><label>Seller / Transferor — Full Name</label>
+                    <input type="text" value="${escapeAttr(e.seller || '')}" ${ro ? 'disabled' : ''} placeholder="Full name of seller" oninput="updateTitleChainEntry(${i},'seller',this.value)"></div>
+                  <div class="tc-field"><label>Docket / Registration No.</label>
+                    <input type="text" value="${escapeAttr(e.docket || '')}" ${ro ? 'disabled' : ''} placeholder="e.g. 1234/2020" oninput="updateTitleChainEntry(${i},'docket',this.value)"></div>
+                  <div class="tc-field"><label>Date of Transfer</label>
+                    <input type="date" value="${escapeAttr(e.date || '')}" ${ro ? 'disabled' : ''} oninput="updateTitleChainEntry(${i},'date',this.value)"></div>
+                </div>
+                ${ro ? '' : `<div class="tc-remove" onclick="removeTitleChainEntry(${i})" title="Remove this entry">&times;</div>`}
+              </div>`).join('');
+            return `<div class="tc-wrap">
+              ${rows || '<div class="tc-empty">No transfer entries added yet. Add each ownership transfer in chronological order.</div>'}
+            </div>
+            ${ro ? '' : '<button type="button" class="btn btn-ghost tc-add" onclick="addTitleChainEntry()">+ Add Transfer Entry</button>'}`;
+        }
+
+        function addTitleChainEntry() {
+            if (!Array.isArray(state.data.titleChainEntries)) state.data.titleChainEntries = [];
+            state.data.titleChainEntries.push({ buyer: '', seller: '', docket: '', date: '' });
+            syncTitleFlowSummary();
+            renderAll();
+        }
+
+        function removeTitleChainEntry(i) {
+            if (!Array.isArray(state.data.titleChainEntries)) return;
+            state.data.titleChainEntries.splice(i, 1);
+            syncTitleFlowSummary();
+            renderAll();
+        }
+
+        function updateTitleChainEntry(i, field, value) {
+            if (!Array.isArray(state.data.titleChainEntries)) state.data.titleChainEntries = [];
+            if (!state.data.titleChainEntries[i]) state.data.titleChainEntries[i] = {};
+            state.data.titleChainEntries[i][field] = value;
+            syncTitleFlowSummary();
+            updateProgressOnly();
+        }
+
+        // Keeps a plain-text narrative in sync for downstream consumers
+        // (Admin Panel PDF generation) that still read `titleFlow` as a string.
+        function syncTitleFlowSummary() {
+            const entries = state.data.titleChainEntries || [];
+            state.data.titleFlow = entries
+                .filter(e => e && (e.buyer || e.seller || e.docket || e.date))
+                .map((e, i) => `${i + 1}. ${e.seller || '[Seller]'} to ${e.buyer || '[Buyer]'} — Docket/Regn No. ${e.docket || 'N/A'}, dated ${e.date || 'N/A'}`)
+                .join('\n');
         }
 
         function photosHTML() {
@@ -2488,6 +2723,14 @@
             renderRail();
             renderForm();
             renderActionBar();
+            updatePrintLetterhead();
+        }
+
+        function updatePrintLetterhead() {
+            const appEl = document.getElementById('plAppNo');
+            const dateEl = document.getElementById('plDate');
+            if (appEl) appEl.textContent = 'Application No: ' + (state.data.loanAppNo || '—');
+            if (dateEl) dateEl.textContent = 'Report Date: ' + (state.data.reportDate || new Date().toLocaleDateString('en-IN'));
         }
 
         // -------------------------------------------------------------
