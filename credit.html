@@ -1473,6 +1473,11 @@
             }
         }
 
+        .print-letterhead,
+        .print-footer {
+            display: none;
+        }
+
         @media print {
             .topbar,
             .rail,
@@ -1497,11 +1502,80 @@
                 padding-bottom: 20px;
                 max-width: 100%;
             }
+            .print-letterhead {
+                display: block !important;
+                text-align: center;
+                padding-bottom: 14px;
+                margin-bottom: 20px;
+                border-bottom: 2px solid #C4A672;
+            }
+            .print-letterhead .pl-mark {
+                font-size: 22px;
+                color: #B48C28;
+                margin-bottom: 4px;
+            }
+            .print-letterhead .pl-name {
+                font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+                font-size: 22px;
+                font-weight: 700;
+                letter-spacing: 3px;
+                color: #111;
+            }
+            .print-letterhead .pl-tag {
+                font-size: 9.5px;
+                letter-spacing: 1.5px;
+                text-transform: uppercase;
+                color: #8a7648;
+                margin-top: 3px;
+            }
+            .print-letterhead .pl-rule {
+                height: 1px;
+                background: #C4A672;
+                margin: 10px auto;
+                width: 55%;
+            }
+            .print-letterhead .pl-title {
+                font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+                font-size: 15px;
+                font-weight: 700;
+                letter-spacing: 1px;
+                margin-top: 4px;
+                color: #111;
+            }
+            .print-letterhead .pl-meta {
+                display: flex;
+                justify-content: space-between;
+                font-size: 10px;
+                color: #444;
+                margin-top: 10px;
+            }
+            .print-footer {
+                display: block !important;
+                margin-top: 26px;
+                padding-top: 10px;
+                border-top: 1px solid #ccc;
+                font-size: 8.5px;
+                color: #777;
+                text-align: center;
+            }
         }
     </style>
 </head>
 
 <body data-theme="dark">
+
+    <!-- ===== PRINT LETTERHEAD (company branding — shown only on printed / exported PDF) ===== -->
+    <div class="print-letterhead" id="printLetterhead">
+        <div class="pl-mark">&#9670;</div>
+        <div class="pl-name">SOLITAIRE FINZ MART</div>
+        <div class="pl-tag">Loan Origination &amp; Financial Advisory</div>
+        <div class="pl-rule"></div>
+        <div class="pl-title">CREDIT / SANCTION REPORT</div>
+        <div class="pl-meta">
+            <span id="plAppNo">Application No: —</span>
+            <span id="plDate">Report Date: —</span>
+        </div>
+    </div>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
@@ -1557,6 +1631,11 @@
     <!-- ===== ACTION BAR ===== -->
     <div class="actionbar">
         <div class="actionbar-inner" id="actionBar"></div>
+    </div>
+
+    <!-- ===== PRINT FOOTER (company branding — shown only on printed / exported PDF) ===== -->
+    <div class="print-footer">
+        Solitaire Finz Mart &middot; Loan DSA &amp; Financial Advisory &middot; Bhiwandi, Thane, Maharashtra &middot; This report is computer generated and forms part of the internal credit file.
     </div>
 
     <script>
@@ -1717,8 +1796,10 @@
                     ] },
                 { key: 'netMonthlyIncome', label: 'Net Monthly Income (₹)', type: 'number' },
                 { key: 'existingEmiObligations', label: 'Existing EMI Obligations (₹/month)', type: 'number' },
-                { key: 'foirPercent', label: 'FOIR (%)', type: 'number' },
-                { key: 'dtiRatio', label: 'DTI Ratio', type: 'text' },
+                { key: 'foirPercent', label: 'FOIR (%) — Auto-calculated', type: 'calc', compute: computeFOIR,
+                    suffix: '%' },
+                { key: 'dtiRatio', label: 'DTI (%) — Auto-calculated (incl. proposed EMI)', type: 'calc',
+                    compute: computeDTI, suffix: '%' },
                 { key: 'cibilScore', label: 'CIBIL Score', type: 'number', prefill: true },
                 { key: 'bankingBehaviour', label: 'Banking / Repayment Track Record', type: 'textarea',
                     full: true },
@@ -1753,7 +1834,11 @@
                 { key: 'sanctionedLoanAmount', label: 'Sanctioned Loan Amount (₹)', type: 'number', req: true },
                 { key: 'tenureMonths', label: 'Term / Tenure (months)', type: 'number', req: true },
                 { key: 'roi', label: 'Rate of Interest — ROI (%)', type: 'number', req: true },
-                { key: 'processingFees', label: 'Processing Fees', type: 'text', req: true },
+                { key: 'calculatedEmi', label: 'EMI (₹ / month) — Auto-calculated', type: 'calc',
+                    compute: computeEMI, money: true },
+                { key: 'feesPercent', label: 'Processing Fee (%)', type: 'number', req: true },
+                { key: 'feesAmount', label: 'Processing Fee Amount — Auto-calculated', type: 'calc',
+                    compute: computeFeesAmount, money: true },
                 { key: 'otherCharges', label: 'Other Charges (login, legal, technical, insurance, etc.)',
                     type: 'text', full: true },
                 { key: 'sanctionConditions', label: 'Conditions / Sanction Conditions', type: 'textarea', req: true,
@@ -1975,6 +2060,7 @@
             </div>`;
             }).join('');
             root.innerHTML = renderUnlockPanel() + sectionsHtml;
+            recomputeCalcFields();
 
             // attach change handlers for text/number/date/select/textarea
             root.querySelectorAll('[data-key]').forEach(el => {
@@ -1982,6 +2068,7 @@
                 el.addEventListener('input', e => {
                     state.data[el.dataset.key] = el.value;
                     updateProgressOnly();
+                    recomputeCalcFields();
                 });
             });
 
@@ -2055,6 +2142,9 @@
                 case 'riskchips':
                     inner = riskHTML(ro);
                     break;
+                case 'calc':
+                    inner = `<input type="text" value="${escapeAttr(calcDisplay(f))}" disabled style="opacity:.85;font-weight:700;color:var(--gold)">`;
+                    break;
                 default:
                     inner = '';
             }
@@ -2063,6 +2153,76 @@
             ${inner}
             <div class="hint-err">This field is required before submission.</div>
           </div>`;
+        }
+
+        // ---------- Auto-calculated fields (FOIR, DTI, EMI, fee amount) ----------
+        function toNum(v) {
+            const n = parseFloat(v);
+            return isNaN(n) ? 0 : n;
+        }
+
+        function computeFOIR(d) {
+            const income = toNum(d.netMonthlyIncome);
+            const emi = toNum(d.existingEmiObligations);
+            if (!income) return '';
+            return ((emi / income) * 100).toFixed(2);
+        }
+
+        function computeDTI(d) {
+            const income = toNum(d.netMonthlyIncome);
+            const existingEmi = toNum(d.existingEmiObligations);
+            const proposedEmi = toNum(d.calculatedEmi);
+            if (!income) return '';
+            return (((existingEmi + proposedEmi) / income) * 100).toFixed(2);
+        }
+
+        function computeEMI(d) {
+            const P = toNum(d.sanctionedLoanAmount);
+            const annualRate = toNum(d.roi);
+            const n = toNum(d.tenureMonths);
+            if (!P || !annualRate || !n) return '';
+            const r = annualRate / 12 / 100;
+            const emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+            return isFinite(emi) ? String(Math.round(emi)) : '';
+        }
+
+        function computeFeesAmount(d) {
+            const P = toNum(d.sanctionedLoanAmount);
+            const pctVal = toNum(d.feesPercent);
+            if (!P || !pctVal) return '';
+            return String(Math.round(P * pctVal / 100));
+        }
+
+        // Computes + stores the raw value on state.data, and returns a
+        // formatted display string (with money / % formatting) for the input.
+        function calcDisplay(f) {
+            const cv = f.compute ? f.compute(state.data) : '';
+            state.data[f.key] = cv;
+            if (cv === '' || cv === null || cv === undefined) return '';
+            if (f.money) return '₹' + Number(cv).toLocaleString('en-IN');
+            return cv + (f.suffix || '');
+        }
+
+        // Re-renders just the calc-field inputs (without a full form
+        // re-render, so the field the user is typing in keeps focus) and
+        // keeps the legacy `processingFees` text field in sync for the
+        // Admin Panel PDF, which still reads it as a plain string.
+        function recomputeCalcFields() {
+            schema.forEach(sec => (sec.fields || []).forEach(f => {
+                if (f.type !== 'calc') return;
+                const display = calcDisplay(f);
+                const el = document.querySelector('#f_' + f.key + ' input');
+                if (el) el.value = display;
+            }));
+            syncFeesSummary();
+        }
+
+        function syncFeesSummary() {
+            const pctVal = state.data.feesPercent;
+            const amt = state.data.feesAmount;
+            if (pctVal) {
+                state.data.processingFees = pctVal + '%' + (amt !== '' && amt != null ? ' (₹' + Number(amt).toLocaleString('en-IN') + ')' : '');
+            }
         }
 
         function photosHTML() {
@@ -2446,6 +2606,14 @@
             renderRail();
             renderForm();
             renderActionBar();
+            updatePrintLetterhead();
+        }
+
+        function updatePrintLetterhead() {
+            const appEl = document.getElementById('plAppNo');
+            const dateEl = document.getElementById('plDate');
+            if (appEl) appEl.textContent = 'Application No: ' + (state.data.loanAppNo || '—');
+            if (dateEl) dateEl.textContent = 'Report Date: ' + (state.data.reportDate || new Date().toLocaleDateString('en-IN'));
         }
 
         // -------------------------------------------------------------
