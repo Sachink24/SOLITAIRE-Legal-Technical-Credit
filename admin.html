@@ -344,9 +344,9 @@
     const avgRevenuePerCase = feeAmounts.length ? (feeAmounts.reduce((a, b) => a + b * 0.01, 0) / feeAmounts.length) : 0;
 
     const moneyCards = [
-      { label: 'Total Sanction Amount', n: fmtINR(totalSanctionAmount) },
+      { label: 'Sanction Amount', n: fmtINR(totalSanctionAmount) },
       { label: 'Processing Fees Collected', n: fmtINR(totalProcessingFees) },
-      { label: 'Avg Revenue (1% of Fees)', n: fmtINR(avgRevenuePerCase) }
+      { label: 'Revenue (50% of Fees)', n: fmtINR(avgRevenuePerCase) }
     ];
 
     document.getElementById('dashCards').innerHTML = cards.map(c => `
