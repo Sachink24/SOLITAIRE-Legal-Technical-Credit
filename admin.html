@@ -341,7 +341,7 @@
     const feeAmounts = allSanctions.map(s => Number(s.processing_fee) || 0).filter(n => n > 0);
     const totalSanctionAmount = sanctionAmounts.reduce((a, b) => a + b, 0);
     const totalProcessingFees = feeAmounts.reduce((a, b) => a + b, 0);
-    const avgRevenuePerCase = feeAmounts.length ? (feeAmounts.reduce((a, b) => a + b * 0.50, 0) / feeAmounts.length) : 0;
+    const avgRevenuePerCase = totalProcessingFees * 0.50;
 
     const moneyCards = [
       { label: 'Sanction Amount', n: fmtINR(totalSanctionAmount) },
