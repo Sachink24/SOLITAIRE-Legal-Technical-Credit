@@ -53,6 +53,8 @@
   .card { background: var(--panel); border: 1px solid var(--border-soft); border-radius: 12px; padding: 16px 18px; cursor: pointer; transition: border-color .15s ease, transform .15s ease; }
   .card:hover { border-color: var(--gold); transform: translateY(-2px); }
   .card .n { font-family: 'IBM Plex Mono', monospace; font-size: 26px; font-weight: 600; color: var(--gold-bright); line-height: 1; }
+  .card:not([data-goto]) { cursor: default; }
+  .card:not([data-goto]) .n { font-size: 19px; }
   .card .l { font-size: 11.5px; color: var(--ink-dim); margin-top: 8px; text-transform: uppercase; letter-spacing: .04em; }
 
   /* Search + list */
@@ -273,7 +275,7 @@
     document.getElementById('appMain').style.display = 'block';
     bindTabs();
     bindSearch();
-    await loadAllLeads();
+    await Promise.all([loadAllLeads(), loadAllSanctions()]);
     renderDashboard();
     renderCaseList();
     loadAuditTrail();
@@ -305,7 +307,16 @@
     allLeads = data || [];
   }
 
+  let allSanctions = [];
+  async function loadAllSanctions() {
+    if (!sb) return;
+    const { data, error } = await sb.from('sanctions').select('sanction_amount, processing_fee');
+    if (error) { console.error(error); toast('Failed to load sanction records'); return; }
+    allSanctions = data || [];
+  }
+
   function countBy(pred) { return allLeads.filter(pred).length; }
+  function fmtINR(n) { return '₹' + Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 }); }
 
   // -------------------------------------------------------------
   // DASHBOARD
@@ -324,10 +335,26 @@
       { label: 'Sanctioned', n: countBy(l => (l.stage||'').toUpperCase()==='SANCTIONED'), filter: l => (l.stage||'').toUpperCase()==='SANCTIONED' },
       { label: 'Rejected', n: countBy(l => ['legal_status','technical_status','credit_status'].some(k => (l[k]||'').toLowerCase()==='rejected')), filter: l => ['legal_status','technical_status','credit_status'].some(k => (l[k]||'').toLowerCase()==='rejected') }
     ];
+
+    // ---- Sanction & revenue figures (from public.sanctions) ----
+    const sanctionAmounts = allSanctions.map(s => Number(s.sanction_amount) || 0).filter(n => n > 0);
+    const feeAmounts = allSanctions.map(s => Number(s.processing_fee) || 0).filter(n => n > 0);
+    const totalSanctionAmount = sanctionAmounts.reduce((a, b) => a + b, 0);
+    const totalProcessingFees = feeAmounts.reduce((a, b) => a + b, 0);
+    const avgRevenuePerCase = feeAmounts.length ? (feeAmounts.reduce((a, b) => a + b * 0.01, 0) / feeAmounts.length) : 0;
+
+    const moneyCards = [
+      { label: 'Total Sanction Amount', n: fmtINR(totalSanctionAmount) },
+      { label: 'Processing Fees Collected', n: fmtINR(totalProcessingFees) },
+      { label: 'Avg Revenue (1% of Fees)', n: fmtINR(avgRevenuePerCase) }
+    ];
+
     document.getElementById('dashCards').innerHTML = cards.map(c => `
       <div class="card" data-goto="cases"><div class="n mono">${c.n}</div><div class="l">${c.label}</div></div>
+    `).join('') + moneyCards.map(c => `
+      <div class="card"><div class="n mono">${c.n}</div><div class="l">${c.label}</div></div>
     `).join('');
-    document.querySelectorAll('#dashCards .card').forEach(c => c.addEventListener('click', () => switchTab('cases')));
+    document.querySelectorAll('#dashCards .card[data-goto="cases"]').forEach(c => c.addEventListener('click', () => switchTab('cases')));
 
     const recent = allLeads.slice(0, 5);
     document.getElementById('dashRecent').innerHTML = recent.length ? renderCaseTable(recent) : '<div class="empty-state">No leads yet.</div>';
