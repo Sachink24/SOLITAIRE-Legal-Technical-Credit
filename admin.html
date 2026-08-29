@@ -505,22 +505,42 @@
     if (!allApproved) {
       return `<div class="section-card"><div class="sc-text" style="color:var(--ink-faint);">Sanction becomes available once Legal, Technical and Credit are all Approved.</div></div>`;
     }
+    // Pre-fill from the Credit team's approved figures (leads.credit_*) so the
+    // sanction record starts as a mirror of what Credit actually approved,
+    // instead of a blank form the admin retypes from memory. This is the fix
+    // for sanctions.sanction_amount silently drifting from credit_loan_amount.
+    const creditAmount = lead.credit_loan_amount != null ? lead.credit_loan_amount : '';
+    const creditTerm = lead.credit_term_months != null ? lead.credit_term_months : '';
+    const creditRoi = lead.credit_roi != null ? lead.credit_roi : '';
+    const creditFee = lead.credit_fees || '';
+    const creditConditions = lead.credit_conditions || '';
+    const amountLocked = creditAmount !== '';
     return `<div class="sanction-panel">
       <h4>Final Sanction</h4>
+      ${amountLocked ? `<div class="sc-text" style="color:var(--ink-faint);margin-bottom:8px;">Amount, tenure and ROI are locked to Credit's approved figures. Unlock only if the terms were genuinely renegotiated after credit approval.</div>` : ''}
       <div class="sanction-grid">
-        <div><label>Sanction Amount (₹)</label><input id="sxAmount" type="number" /></div>
-        <div><label>Tenure (months)</label><input id="sxTenure" type="number" /></div>
-        <div><label>ROI (%)</label><input id="sxRoi" type="number" step="0.01" /></div>
+        <div><label>Sanction Amount (₹)</label><input id="sxAmount" type="number" value="${esc(creditAmount)}" ${amountLocked ? 'readonly' : ''} /></div>
+        <div><label>Tenure (months)</label><input id="sxTenure" type="number" value="${esc(creditTerm)}" ${amountLocked ? 'readonly' : ''} /></div>
+        <div><label>ROI (%)</label><input id="sxRoi" type="number" step="0.01" value="${esc(creditRoi)}" ${amountLocked ? 'readonly' : ''} /></div>
         <div><label>EMI (₹)</label><input id="sxEmi" type="number" /></div>
-        <div><label>Processing Fee</label><input id="sxFee" type="text" /></div>
+        <div><label>Processing Fee</label><input id="sxFee" type="text" value="${esc(creditFee)}" /></div>
         <div><label>Insurance</label><input id="sxIns" type="text" /></div>
         <div><label>Banker</label><input id="sxBanker" type="text" value="${esc((lead.institution_name)||'')}" /></div>
         <div><label>Sanction Reference No.</label><input id="sxRef" type="text" /></div>
         <div><label>Sanction Date</label><input id="sxDate" type="date" value="${new Date().toISOString().slice(0,10)}" /></div>
-        <textarea id="sxRemarks" placeholder="Conditions / final remarks…"></textarea>
+        <textarea id="sxRemarks" placeholder="Conditions / final remarks…">${esc(creditConditions)}</textarea>
       </div>
+      ${amountLocked ? `<button class="btn btn-secondary" type="button" onclick="window.__sfmAdmin.unlockSanctionTerms()" style="margin-bottom:8px;">Unlock terms (renegotiated)</button>` : ''}
       <button class="btn btn-gold" onclick="window.__sfmAdmin.approveSanction()">Approve Sanction</button>
     </div>`;
+  }
+
+  function unlockSanctionTerms() {
+    ['sxAmount', 'sxTenure', 'sxRoi'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.readOnly = false;
+    });
+    toast('Terms unlocked — you are overriding Credit\'s approved figures');
   }
 
   function renderModal() {
@@ -595,10 +615,26 @@
     if (!currentBundle || !sb) return;
     const lead = currentBundle.lead || {};
     const email = (window.SolitaireAuth && window.SolitaireAuth.profile && window.SolitaireAuth.profile.email) || 'admin';
+    const sanctionAmount = Number(document.getElementById('sxAmount').value) || null;
+
+    // Guard: if the amount on screen no longer matches what Credit approved,
+    // this can only happen via the explicit "Unlock terms" override — require
+    // a reason so the drift is traceable instead of silent.
+    let overrideReason = '';
+    if (lead.credit_loan_amount != null && sanctionAmount != null && Number(lead.credit_loan_amount) !== sanctionAmount) {
+      overrideReason = prompt(
+        `Sanction amount (₹${sanctionAmount.toLocaleString()}) differs from Credit's approved amount (₹${Number(lead.credit_loan_amount).toLocaleString()}). ` +
+        `Enter a reason for this override (required):`, ''
+      );
+      if (!overrideReason || !overrideReason.trim()) { toast('Sanction cancelled — override reason required'); return; }
+      overrideReason = overrideReason.trim();
+    }
+
+    const remarksRaw = document.getElementById('sxRemarks').value || null;
     const payload = {
       lead_id: currentLeadId,
       application_no: 'LN-' + currentLeadId,
-      sanction_amount: Number(document.getElementById('sxAmount').value) || null,
+      sanction_amount: sanctionAmount,
       tenure_months: Number(document.getElementById('sxTenure').value) || null,
       roi: Number(document.getElementById('sxRoi').value) || null,
       emi: Number(document.getElementById('sxEmi').value) || null,
@@ -607,7 +643,7 @@
       banker: document.getElementById('sxBanker').value || null,
       sanction_reference_no: document.getElementById('sxRef').value || null,
       sanction_date: document.getElementById('sxDate').value || null,
-      final_remarks: document.getElementById('sxRemarks').value || null,
+      final_remarks: overrideReason ? `${remarksRaw || ''}\n[Amount override: ${overrideReason}]`.trim() : remarksRaw,
       status: 'sanctioned',
       approved_by: email,
       approved_at: new Date().toISOString()
@@ -615,7 +651,10 @@
     const { error } = await sb.from('sanctions').upsert(payload, { onConflict: 'lead_id' });
     if (error) { console.error(error); toast('Sanction failed: ' + error.message); return; }
 
-    await sb.from('leads').update({ stage: 'SANCTIONED', admin_status: 'APPROVED' }).eq('id', currentLeadId);
+    // Keep status AND stage in sync — previously only `stage` was set here,
+    // leaving `status` stuck on whatever it was before (e.g. 'NEW'), which is
+    // why report/status views disagreed with the pipeline's SANCTIONED badge.
+    await sb.from('leads').update({ stage: 'SANCTIONED', status: 'APPROVED', admin_status: 'APPROVED' }).eq('id', currentLeadId);
     await DB.logWorkflowEvent({ leadId: currentLeadId, applicationNo: 'LN-' + currentLeadId, action: 'SANCTIONED', oldStatus: lead.stage, newStatus: 'SANCTIONED', remarks: payload.final_remarks });
 
     toast('Case sanctioned');
@@ -645,7 +684,7 @@
       </li>`).join('');
   }
 
-  window.__sfmAdmin = { decide, approveSanction };
+  window.__sfmAdmin = { decide, approveSanction, unlockSanctionTerms };
   init();
 })();
 </script>
